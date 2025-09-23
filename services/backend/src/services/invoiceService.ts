@@ -15,8 +15,18 @@ interface InvoiceRow {
 
 class InvoiceService {
   static async list( userId: string, status?: string, operator?: string): Promise<Invoice[]> {
+    const validOps = ['=', '!=', '<>', '>', '<', '>=', '<=', 'like'];
     let q = db<InvoiceRow>('invoices').where({ userId: userId });
-    if (status) q = q.andWhereRaw(" status "+ operator + " '"+ status +"'");
+
+    if (status) {
+      
+      /*q = q.andWhereRaw(" status "+ operator + " '"+ status +"'");*/
+      const op = operator ??'=';
+      if (!validOps.includes(op)) {
+        throw new Error('Invalid operation');
+      }
+      q = q.andWhere('status', op as any, status);
+    }
     const rows = await q.select();
     const invoices = rows.map(row => ({
       id: row.id,
