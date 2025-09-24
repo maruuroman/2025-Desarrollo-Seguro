@@ -69,7 +69,7 @@ const hashedPassword = await bcrypt.hash(user.password, SALT_ROUNDS);
       .where({ id: user.id })
       .first();
     if (!existing) throw new Error('User not found');
-
+   
 let hashed = existing.password;
     if (user.password) {
       hashed = await bcrypt.hash(user.password, SALT_ROUNDS);
@@ -79,7 +79,7 @@ let hashed = existing.password;
       .where({ id: user.id })
       .update({
         username: user.username,
-        password: user.password,
+        password: hashed,
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name
@@ -160,7 +160,7 @@ let hashed = existing.password;
     await db('users')
       .where({ id: row.id })
       .update({
-        password: newPassword,
+        password: hashed,
         reset_password_token: null,
         reset_password_expires: null
       });
@@ -174,10 +174,10 @@ let hashed = existing.password;
     if (!row) throw new Error('Invalid or expired invite token');
 
     const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    
+
     await db('users')
       .update({
-        password: newPassword,
+        password: hashed,
         invite_token: null,
         invite_token_expires: null
       })
