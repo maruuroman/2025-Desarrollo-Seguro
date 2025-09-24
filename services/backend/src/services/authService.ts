@@ -59,7 +59,7 @@ class AuthService {
     });
   }
 
-  static async updateUser(user: User) {
+  static async updateUser(id: string, user: User) {
     const existing = await db<UserRow>('users')
       .where({ id: user.id })
       .first();
