@@ -5,9 +5,11 @@ import db from '../db';
 import { User,UserRow } from '../types/user';
 import jwtUtils from '../utils/jwt';
 import ejs from 'ejs';
+import bcrypt from 'bcrypt';
 
 const RESET_TTL = 1000 * 60 * 60;         // 1h
 const INVITE_TTL = 1000 * 60 * 60 * 24 * 7; // 7d
+const SALT_ROUNDS = 12;
 
 class AuthService {
 
@@ -17,6 +19,9 @@ class AuthService {
       .orWhere({ email: user.email })
       .first();
     if (existing) throw new Error('User already exists with that username or email');
+
+const hashedPassword = await bcrypt.hash(user.password, SALT_ROUNDS);
+
     // create invite token
     const invite_token = crypto.randomBytes(6).toString('hex');
     const invite_token_expires = new Date(Date.now() + INVITE_TTL);
@@ -64,6 +69,12 @@ class AuthService {
       .where({ id: user.id })
       .first();
     if (!existing) throw new Error('User not found');
+
+let hashed = existing.password;
+    if (user.password) {
+      hashed = await bcrypt.hash(user.password, SALT_ROUNDS);
+    }
+
     await db<UserRow>('users')
       .where({ id: user.id })
       .update({
@@ -82,7 +93,23 @@ class AuthService {
       .andWhere('activated', true)
       .first();
     if (!user) throw new Error('Invalid email or not activated');
-    if (password != user.password) throw new Error('Invalid password');
+
+    /*if (password != user.password) throw new Error('Invalid password');*/
+
+    const stored = user.password as string || '';
+
+    const looksLikeBcrypt = stored.startsWith('$2a$') || stored.startsWith('$2b$') || stored.startsWith('$2y$');
+
+    if (looksLikeBcrypt) {
+      const match = await bcrypt.compare(password, stored);
+      if (!match) throw new Error('Invalid password');
+    } else {
+      if (password !== stored) throw new Error('Invalid password');
+
+      const newHash = await bcrypt.hash(password, SALT_ROUNDS);
+      await db<UserRow>('users').where({ id: user.id }).update({ password: newHash });
+    }
+
     return user;
   }
 
@@ -128,6 +155,8 @@ class AuthService {
       .first();
     if (!row) throw new Error('Invalid or expired reset token');
 
+    const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
     await db('users')
       .where({ id: row.id })
       .update({
@@ -144,6 +173,8 @@ class AuthService {
       .first();
     if (!row) throw new Error('Invalid or expired invite token');
 
+    const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    
     await db('users')
       .update({
         password: newPassword,
