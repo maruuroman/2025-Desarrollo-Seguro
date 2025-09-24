@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-
+import dotenv from 'dotenv';
+dotenv.config();
 interface JwtPayload {
   id: string;
 }
@@ -15,7 +16,11 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, "secreto_super_seguro");
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return res.status(500).json({ message: 'JWT_SECRET is not defined in environment variables'})
+    }
+    const decoded = jwt.verify(token, secret);
     (req as any).user = decoded;
     next();
   } catch (err) {
