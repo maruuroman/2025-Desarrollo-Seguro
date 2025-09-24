@@ -5,6 +5,11 @@ import axios from 'axios';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 
+const PAYMENT_BRAND_URLS: Record<string, string> = {
+  visa: 'http://visa:80',
+  master: 'http://master:80'
+}
+
 interface InvoiceRow {
   id: string;
   userId: string;
@@ -49,11 +54,30 @@ class InvoiceService {
     // use axios to call http://paymentBrand/payments as a POST request
     // with the body containing ccNumber, ccv, expirationDate
     // and handle the response accordingly
+    /*
     const paymentResponse = await axios.post(`http://${paymentBrand}/payments`, {
       ccNumber,
       ccv,
       expirationDate
     });
+    if (paymentResponse.status !== 200) {
+      throw new Error('Payment failed');
+    }
+      */
+     const baseUrl = PAYMENT_BRAND_URLS[paymentBrand];
+    if (!baseUrl) {
+      throw new Error('Payment brand no permitida');
+    }
+
+    const paymentResponse = await axios.post(`${baseUrl}/payments`, {
+      ccNumber,
+      ccv,
+      expirationDate
+    }, {
+      headers: { 'Content-Type': 'application/json' },
+      maxRedirects: 0 
+    });
+
     if (paymentResponse.status !== 200) {
       throw new Error('Payment failed');
     }
