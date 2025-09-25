@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import routes from '../controllers/authController';
+import authenticateJWT from '../middleware/auth.middleware';
 
 const router = Router();
 
 // POST /auth to create a new user
 // This route is typically used for user registration
-router.post('/', routes.createUser);
+router.post('/', authenticateJWT, routes.createUser);
 
 // PUT /auth/:id to update an existing user
 // This route is typically used for updating user details

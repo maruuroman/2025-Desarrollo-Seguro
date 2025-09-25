@@ -55,6 +55,11 @@ const setPassword = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const createUser = async (req: Request, res: Response, next: NextFunction) => {
+  const currentUser = (req as any).user;
+  
+  if (!currentUser || currentUser.id !== 1) {
+    return res.status(403).json({ message: "No autorizado para crear usuarios" });
+  }
   const { username, password, email, first_name, last_name } = req.body;
   try {
     const user: User = {
@@ -73,16 +78,22 @@ const createUser = async (req: Request, res: Response, next: NextFunction) => {
 
 const updateUser = async (req: Request, res: Response, next: NextFunction) => {
   const userId = req.params.id;
+  const currentUser = (req as any).user;
+
+  if (!currentUser || currentUser.id !== Number(userId)) {
+    return res.status(403).json({ message: "No se puede actualizar este usuario."});
+  }
   const { username, password, email, first_name, last_name } = req.body;
   try {
   const user: User = {
+    id: userId,
       username,
       password,
       email,
       first_name,
       last_name
     };
-    const userDB = await AuthService.updateUser(user);
+    const userDB = await AuthService.updateUser(userId, user);
       res.status(201).json(userDB);
   } catch (err) {
     next(err);

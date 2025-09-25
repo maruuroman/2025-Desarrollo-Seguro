@@ -117,7 +117,7 @@ describe('AuthService.generateJwt', () => {
       .mockReturnValueOnce(selectChain as any)
       .mockReturnValueOnce(updateChain as any);
     // Call the method to test
-    const updatedUser = await AuthService.updateUser(user);
+    const updatedUser = await AuthService.updateUser(user.id, user);
     // Verify the database calls
     expect(selectChain.where).toHaveBeenCalledWith({ id: user.id });
     expect(updateChain.update).toHaveBeenCalled();
@@ -139,7 +139,7 @@ describe('AuthService.generateJwt', () => {
     };
     mockedDb.mockReturnValueOnce(selectChain as any);
     // Call the method to test
-    await expect(AuthService.updateUser(user)).rejects.toThrow('User not found');
+    await expect(AuthService.updateUser(user.id, user)).rejects.toThrow('User not found');
   });
 
   it('authenticate', async () => {
